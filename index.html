@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Lamumu Game — Clean (No Text)</title>
+<title>Lamumu Cow Game — Clean (Enemy Labels + Boss HP Numbers)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{ --sky:#7ec8ff; --ground:#f58634; --brick:#b05122; --pipe:#2db455; --pipeDark:#1e8b3f; }
@@ -14,7 +14,6 @@
   canvas{width:100%;height:auto;display:block;image-rendering:pixelated;
          border-radius:14px;background:var(--sky);
          box-shadow:0 10px 40px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.08)}
-  /* icon-only reset button (no words) */
   .reset{
     position:absolute;right:14px;bottom:14px;width:42px;height:42px;border-radius:50%;
     display:grid;place-items:center;background:#1d233a;border:0;cursor:pointer;
@@ -28,7 +27,6 @@
   <div class="frame">
     <canvas id="game" width="960" height="540" aria-label="Lamumu Platformer"></canvas>
     <button id="resetBtn" class="reset" title="Reset" aria-label="Reset">
-      <!-- refresh icon -->
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6V2l5 5-5 5V8a4 4 0 1 0 4 4h2a6 6 0 1 1-6-6z"/></svg>
     </button>
   </div>
@@ -56,8 +54,8 @@
   // Power-up & projectile
   const sprPower   = img("https://i.hizliresim.com/qijmxel.png");
   // Enemies
-  const sprEnemy      = img("https://i.hizliresim.com/i02e9cc.png");  // Verifed Moo
-  const sprEnemyGold  = img("https://i.hizliresim.com/76gvped.png");  // Lamoolist
+  const sprEnemy      = img("https://i.hizliresim.com/i02e9cc.png");  // verifed moo
+  const sprEnemyGold  = img("https://i.hizliresim.com/76gvped.png");  // lamoolist
   // Bosses
   const sprBoss1    = img("https://i.hizliresim.com/dc5xv0g.png");
   const sprBoss1Gun = img("https://i.hizliresim.com/7lo8usc.png");
@@ -187,14 +185,14 @@
     if(AABB(player, powerUp)){
       player.hasPower = true;
       powerUp.active = false;
-      qBlock.used = true; qBlock.glowActive = false; // dim after pickup
+      qBlock.used = true; qBlock.glowActive = false;
     }
   }
 
   // ---------- Enemies ----------
   function spawnEnemy(){
     world.enemies.push({ x:W+60, y:GROUND_Y-44, w:48, h:44, vx:-2.2-Math.random()*0.9, vy:0,
-                         harmless:false, converted:false });
+                         harmless:false, converted:false, label:"verifed moo" });
   }
 
   // ---------- Boss ----------
@@ -361,7 +359,7 @@
       if(!e.converted){
         for(let j=world.fires.length-1;j>=0;j--){
           if(AABB(e, world.fires[j])){
-            e.converted = true; e.harmless = true; e.vx = 2.6;
+            e.converted = true; e.harmless = true; e.label = "lamoolist"; e.vx = 2.6;
             world.fires.splice(j,1);
             world.killStreak++;
             if(world.killStreak % 5 === 0 && !world.bossActive){
@@ -412,7 +410,6 @@
 
     // FX
     updateFX(dt);
-
     draw();
     requestAnimationFrame(loop);
   }
@@ -421,7 +418,7 @@
   function drawSky(){
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--sky");
     ctx.fillRect(0,0,W,H);
-    // simple clouds
+    // clouds
     ctx.fillStyle = "#fff";
     const clouds = [{x:90,y:60},{x:310,y:40},{x:720,y:72}];
     for(const c of clouds){
@@ -459,7 +456,7 @@
     ctx.restore();
     ctx.strokeStyle = "#00000044"; ctx.strokeRect(bx+0.5,by+0.5,qBlock.w-1,qBlock.h-1);
     ctx.fillStyle = qBlock.used && !qBlock.glowActive ? "#6e4d2a" : "#000";
-    // center symbol (no text labels)
+    // center square marker
     ctx.fillRect(bx+qBlock.w/2-3, by+qBlock.h/2-3, 6, 6);
   }
   function drawPowerUp(){
@@ -473,6 +470,13 @@
       const ready = im && im.complete && im.naturalWidth>0;
       if(ready) ctx.drawImage(im, e.x, e.y, e.w, e.h);
       else { ctx.fillStyle = e.converted ? "gold" : "#38b000"; ctx.fillRect(e.x, e.y, e.w, e.h); }
+      // label (exact strings requested)
+      ctx.fillStyle="#000";
+      ctx.font="bold 14px system-ui";
+      ctx.textAlign="center";
+      ctx.textBaseline="bottom";
+      const label = e.converted ? "lamoolist" : (e.label || "verifed moo");
+      ctx.fillText(label, e.x + e.w/2, e.y - 4);
     }
   }
   function drawBoss(){
@@ -482,17 +486,19 @@
     else { ctx.fillStyle="#6b2"; ctx.fillRect(b.x,b.y,b.w,b.h); }
     if(b.hitFlash>0){ ctx.save(); ctx.globalCompositeOperation='screen'; ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.restore(); }
 
-    // HP bar without numbers (no text)
+    // HP bar with numbers
     const hp = Math.max(0, b.hp|0), max = Math.max(1, (b.maxHP||20)|0);
     const ratio = hp / max;
-    const barW = Math.max(80, Math.floor(b.w*0.75)), barH = 10;
+    const barW = Math.max(80, Math.floor(b.w*0.75)), barH = 12;
     const bx = Math.floor(b.x + (b.w - barW)/2);
-    let by = Math.floor(b.y - 14); if(by < 6) by = 6;
+    let by = Math.floor(b.y - 16); if(by < 6) by = 6;
     ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(bx-2,by-2,barW+4,barH+4);
     ctx.fillStyle = "#5b1111"; ctx.fillRect(bx,by,barW,barH);
     let fill = "#2ecc71"; if(ratio<0.5) fill = "#f39c12"; if(ratio<0.25) fill = "#e74c3c";
     ctx.fillStyle = fill; ctx.fillRect(bx,by,Math.floor(barW*ratio),barH);
     ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.strokeRect(bx+0.5,by+0.5,barW-1,barH-1);
+    ctx.fillStyle="#fff"; ctx.font="bold 12px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(hp + " / " + max, bx + barW/2, by + barH/2);
   }
   function drawFires(){
     for(const f of world.fires){
